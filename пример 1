@@ -1,0 +1,88 @@
+Вот пример кода на C++, который позволяет вставить данные, введенные пользователем в консоль, в уже существующие таблицы Word на первой и второй страницах документа. Этот код также использует библиотеку COM.
+
+Обратите внимание, что перед использованием кода необходимо установить Microsoft Word и добавить ссылку на библиотеку Microsoft Word xx.x Object Library в проект.
+
+#include <iostream>
+#include <comdef.h>
+#include <windows.h>
+#include <atlbase.h>
+
+int main() {
+    CoInitialize(NULL);
+
+    CLSID clsid;
+    CLSIDFromProgID(L"Word.Application", &clsid);
+    CComPtr<IDispatch> wordApp;
+    wordApp.CoCreateInstance(clsid);
+    
+    wordApp->PutProperty(L"Visible", _variant_t(true));
+    CComPtr<IDispatch> documents;
+    wordApp->get_Documents(&documents);
+    CComPtr<IDispatch> document;
+    documents->Invoke1(L"Open", _variant_t(L"ВашДокумент.docx"), &document); // Укажите путь к файлу
+
+    const int rows = 3; // Количество строк для заполнения
+    const int cols = 3; // Количество столбцов для заполнения
+    std::string data[rows][cols];
+
+    std::cout << "Введите данные для первой таблицы (" << rows << "x" << cols << "):\n";
+    for (int i = 0; i < rows; ++i) {
+        for (int j = 0; j < cols; ++j) {
+            std::cout << "Ячейка [" << i + 1 << "][" << j + 1 << "]: ";
+            std::cin >> data[i][j];
+        }
+    }
+
+    // Получаем первую таблицу (матрицу) из документа
+    CComPtr<IDispatch> tables;
+    document->get_Tables(&tables);
+    CComPtr<IDispatch> firstTable;
+    tables->Invoke1(L"Item", _variant_t(1), &firstTable);
+
+    // Заполняем первую таблицу
+    for (int i = 0; i < rows; ++i) {
+        for (int j = 0; j < cols; ++j) {
+            CComPtr<IDispatch> cell;
+            firstTable->Invoke3(L"Cell", _variant_t(i + 1), _variant_t(j + 1), &cell);
+            cell->PutProperty(L"Range.Text", _variant_t(data[i][j].c_str()));
+        }
+    }
+
+    std::cout << "Введите данные для второй таблицы (" << rows << "x" << cols << "):\n";
+    for (int i = 0; i < rows; ++i) {
+        for (int j = 0; j < cols; ++j) {
+            std::cout << "Ячейка [" << i + 1 << "][" << j + 1 << "]: ";
+            std::cin >> data[i][j];
+        }
+    }
+
+    // Получаем вторую таблицу из документа
+    CComPtr<IDispatch> secondTable;
+    tables->Invoke1(L"Item", _variant_t(2), &secondTable);
+
+    // Заполняем вторую таблицу
+    for (int i = 0; i < rows; ++i) {
+        for (int j = 0; j < cols; ++j) {
+            CComPtr<IDispatch> cell;
+            secondTable->Invoke3(L"Cell", _variant_t(i + 1), _variant_t(j + 1), &cell);
+            cell->PutProperty(L"Range.Text", _variant_t(data[i][j].c_str()));
+        }
+    }
+
+    document->Invoke1(L"Save", NULL); // Сохраняем изменения
+    document->Invoke0(L"Close"); // Закрываем документ
+    wordApp->Invoke0(L"Quit"); // Закрываем Word
+    CoUninitialize();
+
+    std::cout << "Данные успешно вставлены в таблицы документа." << std::endl;
+
+    return 0;
+}
+
+
+### Как использовать код
+1. Убедитесь, что в вашем проекте добавлена ссылка на библиотеку Microsoft Word.
+2. Укажите правильный путь к вашему документу в строке documents->Invoke1(L"Open", _variant_t(L"ВашДокумент.docx"), &document);.
+3. Запустите программу, и введите данные для каждой из таблиц, которые будут вставлены в соответствующие ячейки. 
+
+Этот код открывает существующий документ Word, заполняет данные в первой и второй таблицах, сохраняет изменения и закрывает документ.
