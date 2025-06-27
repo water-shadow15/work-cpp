@@ -1,0 +1,166 @@
+import tkinter as tk
+import subprocess
+from tkinter import messagebox
+
+class NetworkExplorerApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Сетевой проводник")
+        self.root.geometry("500x300")
+        self.root.resizable(False, False)
+        self.root.configure(bg="#f0f2f5")
+        
+        # Значения по умолчанию
+        self.network_path = tk.StringVar(value=r"\\12kaf-1k168-1")
+        self.username = tk.StringVar(value="share")
+        self.password = tk.StringVar(value="12345678")
+        self.path_number = tk.IntVar(value=1)  # Последняя цифра пути
+        
+        self.create_widgets()
+    
+    def create_widgets(self):
+        # Стили
+        header_font = ("Arial", 14, "bold")
+        label_font = ("Arial", 10)
+        entry_font = ("Arial", 10)
+        button_font = ("Arial", 10, "bold")
+        
+        # Главный фрейм
+        main_frame = tk.Frame(self.root, bg="#f0f2f5", padx=20, pady=20)
+        main_frame.pack(fill=tk.BOTH, expand=True)
+        
+        # Заголовок
+        tk.Label(main_frame, text="Подключение к сетевому ресурсу", 
+                font=header_font, bg="#f0f2f5", fg="#333333").pack(pady=(0, 20))
+        
+        # Сетевой путь
+        path_frame = tk.Frame(main_frame, bg="#f0f2f5")
+        path_frame.pack(fill=tk.X, pady=(0, 10))
+        
+        tk.Label(path_frame, text="Сетевой путь:", 
+                font=label_font, bg="#f0f2f5", anchor="w").pack(fill=tk.X)
+        
+        # Поле ввода пути
+        self.path_entry = tk.Entry(path_frame, textvariable=self.network_path, 
+                                 font=entry_font, relief=tk.SOLID, borderwidth=1)
+        self.path_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 5))
+        
+        # Кнопки изменения последней цифры
+        num_frame = tk.Frame(path_frame, bg="#f0f2f5")
+        num_frame.pack(side=tk.RIGHT)
+        
+        tk.Button(num_frame, text="+", width=2, command=self.increment_path,
+                 font=button_font, bg="#e9ecef", relief=tk.SOLID, borderwidth=1).pack(side=tk.TOP)
+        tk.Button(num_frame, text="-", width=2, command=self.decrement_path,
+                 font=button_font, bg="#e9ecef", relief=tk.SOLID, borderwidth=1).pack(side=tk.BOTTOM)
+        
+        # Логин
+        user_frame = tk.Frame(main_frame, bg="#f0f2f5")
+        user_frame.pack(fill=tk.X, pady=(10, 5))
+        
+        tk.Label(user_frame, text="Имя пользователя:", 
+                font=label_font, bg="#f0f2f5", anchor="w").pack(fill=tk.X)
+        
+        self.user_entry = tk.Entry(user_frame, textvariable=self.username, 
+                                 font=entry_font, relief=tk.SOLID, borderwidth=1)
+        self.user_entry.pack(fill=tk.X)
+        
+        # Пароль
+        pass_frame = tk.Frame(main_frame, bg="#f0f2f5")
+        pass_frame.pack(fill=tk.X, pady=5)
+        
+        tk.Label(pass_frame, text="Пароль:", 
+                font=label_font, bg="#f0f2f5", anchor="w").pack(fill=tk.X)
+        
+        self.pass_entry = tk.Entry(pass_frame, textvariable=self.password, show="*",
+                                 font=entry_font, relief=tk.SOLID, borderwidth=1)
+        self.pass_entry.pack(fill=tk.X)
+        
+        # Кнопка подключения
+        connect_btn = tk.Button(main_frame, text="Открыть в проводнике", 
+                              command=self.open_explorer,
+                              font=button_font, bg="#4CAF50", fg="white",
+                              padx=20, pady=8, relief=tk.FLAT)
+        connect_btn.pack(pady=(20, 0))
+        
+        # Статус
+        self.status_label = tk.Label(main_frame, text="", 
+                                   font=("Arial", 9), bg="#f0f2f5", fg="#666666")
+        self.status_label.pack(pady=(10, 0))
+    
+    def increment_path(self):
+        """Увеличивает последнюю цифру в сетевом пути"""
+        current_path = self.network_path.get()
+        try:
+            # Извлекаем последнюю цифру из пути
+            parts = current_path.split('-')
+            last_part = parts[-1]
+            if last_part.isdigit():
+                new_value = str(int(last_part) + 1)
+                parts[-1] = new_value
+                self.network_path.set('-'.join(parts))
+            else:
+                # Если последняя часть не цифра, добавляем "-2"
+                self.network_path.set(current_path + "-2")
+        except Exception:
+            # В случае ошибки просто добавляем "-2"
+            self.network_path.set(current_path + "-2")
+        
+        self.status_label.config(text="")
+    
+    def decrement_path(self):
+        """Уменьшает последнюю цифру в сетевом пути"""
+        current_path = self.network_path.get()
+        try:
+            # Извлекаем последнюю цифру из пути
+            parts = current_path.split('-')
+            last_part = parts[-1]
+            if last_part.isdigit() and int(last_part) > 1:
+                new_value = str(int(last_part) - 1)
+                parts[-1] = new_value
+                self.network_path.set('-'.join(parts))
+        except Exception:
+            # В случае ошибки ничего не делаем
+            pass
+        
+        self.status_label.config(text="")
+    
+    def open_explorer(self):
+        """Открывает сетевой путь в проводнике Windows"""
+        network_path = self.network_path.get().strip()
+        username = self.username.get().strip()
+        password = self.password.get().strip()
+        
+        # Проверка учетных данных
+        if username != "share" or password != "12345678":
+            messagebox.showerror("Ошибка", "Неверный логин или пароль!\nПопробуйте share/12345678")
+            self.status_label.config(text="Ошибка аутентификации", fg="#e74c3c")
+            return
+        
+        try:
+            # Открываем сетевой путь в проводнике
+            subprocess.Popen(f'explorer "{network_path}"')
+            self.status_label.config(text=f"Открыто: {network_path}", fg="#27ae60")
+        except Exception as e:
+            messagebox.showerror("Ошибка", f"Не удалось открыть сетевой путь:\n{str(e)}")
+            self.status_label.config(text="Ошибка подключения", fg="#e74c3c")
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = NetworkExplorerApp(root)
+    root.mainloop()
+
+
+
+############################################
+import subprocess
+
+def open_network_path_direct(network_path):
+    """Открывает сетевой путь напрямую в проводнике"""
+    subprocess.Popen(f'explorer "{network_path}"')
+
+# Укажите нужный сетевой путь
+network_path = r"\\12kaf-1k168-1"
+
+# Открываем проводник с указанным сетевым путем
+open_network_path_direct(network_path)
